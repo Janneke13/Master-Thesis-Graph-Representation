@@ -1,0 +1,4 @@
+rdflib~=6.2.0
+numpy~=1.23.5
+pillow~=9.4.0
+torch~=1.13.1
