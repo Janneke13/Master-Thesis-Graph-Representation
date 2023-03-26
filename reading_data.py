@@ -59,11 +59,11 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
         number_nodes = len(entities) + 1  # map all literals to the same index
 
     if sparse:
-        # create three separate lists - input for the coo matrix later
-        dim_0 = list()
-        dim_1 = list()
-        dim_2 = list()  # only used in case it is relational
-        values = list()
+        # create four separate lists - input for the coo matrix later
+        dim_0 = list()  # for the head of the triple
+        dim_1 = list()  # for the tail of the triple
+        dim_2 = list()  # only used in case it is relational - for the relation
+        values = list()  # will only contain 1's -- the strength of the connections
     else:
         # create an (empty) adjacency matrix in torch for the dense matrix case:
         if not relational:
@@ -117,7 +117,7 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
                 map_ind_to_rel[current_rel] = relation
                 current_rel += 1
 
-    # put all the relations in the pre-made adjacency matrix
+    # put all the relations in the pre-made adjacency matrix - or in the lists defined before, if sparse
     for head, relation, tail in graph:
         # find the location of the head node
         row_selected = map_nod_to_ind[head]
@@ -132,7 +132,6 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
 
         # if the literals are needed separately, it works slightly differently - create the mapping while adding them
         elif literal_representation == "separate":
-            row_selected = map_nod_to_ind[head]
             column_selected = current  # select a new column for every literal
 
             # map the literal to an index as well - this is the only mapping returned later, so it is relevant
@@ -164,6 +163,7 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
         if relational:
             # for relational, make a 3D coo matrix
             if literal_representation == "filtered":
+                # the filtered one has a different size (nr of relations) than the other ones
                 adjacency_matrix = torch.sparse_coo_tensor(indices=torch.tensor([dim_0, dim_1, dim_2]),
                                                            values=torch.tensor(values),
                                                            size=(number_nodes, number_nodes,
