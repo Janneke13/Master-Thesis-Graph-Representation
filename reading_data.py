@@ -8,29 +8,27 @@ Functionalities:
 - creates adjacency matrix
     - literal options: "filtered", "collapsed", "separate", "all-to-one"
     - relational options: False and True
-    - two functions: dense and coo
-        - coo provided in either the scipy.sparse.coo format or the torch.tensor format - added as a parameter
+    - two types: dense and coo
+        - coo provided in the sparse torch tensors
+        - dense provided in torch tensors
 
-Note: "create_adjacency_matrix_nt_dense", ""create_adjacency_matrix_nt_sparse", and "divide_entities_relations_literals"
+Note: "create_adjacency_matrix_nt", and "divide_entities_relations_literals"
 both run in O(n) time.
 """
 
 
-def create_adjecency_matrix_nt_sparse(file_name, literal_representation="filtered", relational=False):
-    # documentation will come later
-    pass
-
-
-def create_adjacency_matrix_nt_dense(file_name, literal_representation="filtered", relational=False):
+def create_adjacency_matrix_nt(file_name, literal_representation="filtered", relational=False, sparse=False):
     """
     Creates an adjacency matrix with certain literal representations of a file of a graph (in .nt format).
-    NOTE: due to excessive memory use, this method is not used.
+    NOTE: dense uses more memory than sparse, so sparse might be preferred.
 
     :param file_name: The file name of the graph that the adjacency matrix needs to be created of.
     :param literal_representation: The way the literals are structurally represented. "filtered" if they are filtered
         out, "collapsed" if literals with the same value are collapsed to the same node, "separate" if the literals are
-        all separated.
+        all separated, "all-to-one" if all the literals (regardless of value) are mapped to the same index.
     :param relational: Boolean denoting whether the relations have to be taken into account.
+    :param sparse: Boolean denoting whether the adjacency matrix needs to be in scipy.sparse.coo_matrix format, if not
+    then torch tensors are used.
     :return: The adjacency matrix of the given file, the mapping (ind->ent), possibly the ind->rel mapping.
     """
 
@@ -60,15 +58,22 @@ def create_adjacency_matrix_nt_dense(file_name, literal_representation="filtered
     elif literal_representation == "all-to-one":
         number_nodes = len(entities) + 1  # map all literals to the same index
 
-    # create an (empty) adjacency matrix in torch
-    if not relational:
-        adjacency_matrix = torch.zeros(number_nodes, number_nodes)
+    if sparse:
+        # create three separate lists - input for the coo matrix later
+        dim_0 = list()
+        dim_1 = list()
+        dim_2 = list()  # only used in case it is relational
+        values = list()
     else:
-        # 3D matrix --> with number of relations
-        if literal_representation == "filtered":
-            adjacency_matrix = torch.zeros(number_nodes, number_nodes, len(relations_without_literals))
+        # create an (empty) adjacency matrix in torch for the dense matrix case:
+        if not relational:
+            adjacency_matrix = torch.zeros(number_nodes, number_nodes)
         else:
-            adjacency_matrix = torch.zeros(number_nodes, number_nodes, len(relations))
+            # 3D matrix --> with number of relations
+            if literal_representation == "filtered":
+                adjacency_matrix = torch.zeros(number_nodes, number_nodes, len(relations_without_literals))
+            else:
+                adjacency_matrix = torch.zeros(number_nodes, number_nodes, len(relations))
 
     # create a mapping for rows/columns representing nodes, to make lookup faster
     map_nod_to_ind = dict()
@@ -136,13 +141,44 @@ def create_adjacency_matrix_nt_dense(file_name, literal_representation="filtered
 
         if (literal_representation == "filtered" and not isinstance(tail, Literal)) \
                 or literal_representation != "filtered":
-            # for relations, everything needs to be mapped to its own relation as well
-            if not relational:
-                adjacency_matrix[row_selected, column_selected] += 1
-            else:
-                relation_selected = map_rel_to_ind[relation]
-                adjacency_matrix[row_selected, column_selected, relation_selected] += 1
 
+            if sparse:
+                # add it to every list needed for the sparse format
+                dim_0.append(row_selected)
+                dim_1.append(column_selected)
+                values.append(1.)
+                if relational:
+                    relation_selected = map_rel_to_ind[relation]
+                    dim_2.append(relation_selected)
+            else:
+                # for dense matrices, we can add the number of relations directly
+                # for relations, everything needs to be mapped to its own relation as well
+                if not relational:
+                    adjacency_matrix[row_selected, column_selected] += 1
+                else:
+                    relation_selected = map_rel_to_ind[relation]
+                    adjacency_matrix[row_selected, column_selected, relation_selected] += 1
+
+    # in case the sparse format is used, create the sparse adjacency matrices
+    if sparse:
+        if relational:
+            # for relational, make a 3D coo matrix
+            if literal_representation == "filtered":
+                adjacency_matrix = torch.sparse_coo_tensor(indices=torch.tensor([dim_0, dim_1, dim_2]),
+                                                           values=torch.tensor(values),
+                                                           size=(number_nodes, number_nodes,
+                                                                 len(relations_without_literals)))
+            else:
+                adjacency_matrix = torch.sparse_coo_tensor(indices=torch.tensor([dim_0, dim_1, dim_2]),
+                                                           values=torch.tensor(values),
+                                                           size=(number_nodes, number_nodes, len(relations)))
+        else:
+            # else, make a 2d matrix
+            adjacency_matrix = torch.sparse_coo_tensor(indices=torch.tensor([dim_0, dim_1]),
+                                                       values=torch.tensor(values),
+                                                       size=(number_nodes, number_nodes))
+
+    # return the relational mapping as well if a relational matrix is created
     if relational:
         return adjacency_matrix, map_ind_to_nod, map_ind_to_rel
 
