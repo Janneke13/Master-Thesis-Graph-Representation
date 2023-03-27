@@ -1,6 +1,5 @@
 import torch
 from rdflib import Graph, Literal
-import scipy
 
 """
 Functionalities:
@@ -145,7 +144,7 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
                 # add it to every list needed for the sparse format
                 dim_0.append(row_selected)
                 dim_1.append(column_selected)
-                values.append(1.)
+                values.append(1)
                 if relational:
                     relation_selected = map_rel_to_ind[relation]
                     dim_2.append(relation_selected)
