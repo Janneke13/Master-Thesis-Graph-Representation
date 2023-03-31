@@ -1,9 +1,11 @@
 import torch
 from rdflib import Graph, Literal
+import gzip
 
 """
 Functionalities:
 - reads in data
+    - can be either .gz or .nt files
 - creates adjacency matrix
     - literal options: "filtered", "collapsed", "separate", "all-to-one"
     - relational options: False and True
@@ -37,9 +39,17 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
                                                                  " is not valid. Please enter one of the following: " \
                                                                  "'filtered', 'collapsed', 'separate', 'all-to-one'."
 
+    assert file_name.endswith(".nt.gz") or file_name.endswith(".nt"), "Please put in a .nt or a .nt.gz file."
+
     # parse the graph using rdflib
     graph = Graph()
-    graph.parse(file_name)
+
+    # depends on whether a nt or a gzip file is read in:
+    if file_name.endswith(".gz"):
+        with gzip.open(file_name, 'r') as gf:
+            graph.parse(data=gf.read(), format='nt')
+    else:
+        graph.parse(file_name)
 
     # get sets of the entities, relations, and literals, get the count of literals
     entities, literals, relations, relations_without_literals, nr_literals = divide_entities_relations_literals(graph)
