@@ -12,6 +12,8 @@ Functionalities:
     - two types: dense and coo
         - coo provided in the sparse torch tensors
         - dense provided in torch tensors
+- create label tensor
+    - also get the indices for the training, validation, and test indices
 
 Note: "create_adjacency_matrix_nt", and "divide_entities_relations_literals"
 both run in O(n) time.
@@ -88,12 +90,20 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
     map_nod_to_ind = dict()
     map_ind_to_nod = dict()
 
+    # only for the entities, as it needs to be used to make the labels feature later:
+    map_ent_to_ind = dict()
+
     # increments so every entity gets a different index in the adjacency matrix
     current = 0
 
     # create a mapping for each unique entity
     for entity in list(entities):
+        # only used to create the adjacency matrix
         map_nod_to_ind[entity] = current
+
+        # only used to return from the function
+        map_ent_to_ind[entity] = current
+
         map_ind_to_nod[current] = entity
         current += 1
 
@@ -189,9 +199,92 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
 
     # return the relational mapping as well if a relational matrix is created
     if relational:
-        return adjacency_matrix, map_ind_to_nod, map_ind_to_rel
+        return adjacency_matrix, map_ind_to_nod, map_ent_to_ind, map_ind_to_rel
 
-    return adjacency_matrix, map_ind_to_nod
+    return adjacency_matrix, map_ind_to_nod, map_ent_to_ind
+
+
+def training_valid_test_set(file_name_train, file_name_valid, file_name_test, mapping_ent_to_ind, number_nodes):
+    """
+    Create a training, validation, and test set for the labels, using the mapping from entity to index used before--
+    to make sure that the correct indices are masked in the created adjacency matrix to compare with these labels.
+
+    :param file_name_train: The file name of the triples representing the train indices.
+    :param file_name_valid: The file name of the triples representing the validation indices.
+    :param file_name_test: The file name of the triples representing the test indices.
+    :param mapping_ent_to_ind: The pre-made mapping of the entities to their indices in the adjacency matrix.
+    :param number_nodes: The number of nodes in the adjacency matrix.
+    :return: The tensor with labels, the tensors with the indices of the training, validation, and test set respectively
+    """
+
+    # read in the files (either in .nt or .nt.gz format):
+    graph_train = Graph()
+    graph_valid = Graph()
+    graph_test = Graph()
+
+    if file_name_train.endswith(".gz"):
+        with gzip.open(file_name_train, 'r') as gf:
+            graph_train.parse(data=gf.read(), format='nt')
+    else:
+        graph_train.parse(file_name_train)
+
+    if file_name_valid.endswith(".gz"):
+        with gzip.open(file_name_valid, 'r') as gf:
+            graph_valid.parse(data=gf.read(), format='nt')
+    else:
+        graph_valid.parse(file_name_valid)
+
+    if file_name_test.endswith(".gz"):
+        with gzip.open(file_name_test, 'r') as gf:
+            graph_test.parse(data=gf.read(), format='nt')
+    else:
+        graph_test.parse(file_name_test)
+
+    graph_all = graph_train + graph_valid + graph_test
+
+    # create a zero-tensor for the labels
+    labels = torch.zeros(number_nodes)
+    class_mapping = dict()
+    current = 1
+
+    # loop over all relations --> to create a tensor with all classes stored in it
+    for head, relation, tail in graph_all:
+        # get the index of head:
+        head_index = mapping_ent_to_ind[head]
+
+        # if current class not yet in map, add it and increment
+        if tail not in class_mapping:
+            class_mapping[tail] = current
+            labels[head_index] = current
+
+            current += 1
+
+        # otherwise, add the class index to the tensor at that point
+        else:
+            label = class_mapping[tail]
+            labels[head_index] = label
+
+    # create lists for the indices of the training
+    train_entities = list()
+    valid_entities = list()
+    test_entities = list()
+
+    # add the mapped versions to the lists
+    for head, relation, tail in graph_train:
+        train_entities.append(mapping_ent_to_ind[head])
+
+    for head, relation, tail in graph_valid:
+        valid_entities.append(mapping_ent_to_ind[head])
+
+    for head, relation, tail in graph_test:
+        test_entities.append(mapping_ent_to_ind[head])
+
+    # create tensors out of it
+    train_entities = torch.LongTensor(train_entities)
+    valid_entities = torch.LongTensor(valid_entities)
+    test_entities = torch.LongTensor(test_entities)
+
+    return labels, train_entities, valid_entities, test_entities
 
 
 def divide_entities_relations_literals(kg):
@@ -207,6 +300,9 @@ def divide_entities_relations_literals(kg):
     relations_without_literals = set()
     literals = set()
     nr_literals_total = 0
+
+    # could use
+    #  [list(i) for i in zip(*subjects_objects)]
 
     for head, relation, tail in kg:
         # note: heads can ONLY be entities
