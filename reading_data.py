@@ -301,9 +301,6 @@ def divide_entities_relations_literals(kg):
     literals = set()
     nr_literals_total = 0
 
-    # could use
-    #  [list(i) for i in zip(*subjects_objects)]
-
     for head, relation, tail in kg:
         # note: heads can ONLY be entities
         entities.add(head)
