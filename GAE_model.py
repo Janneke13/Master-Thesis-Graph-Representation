@@ -1,11 +1,7 @@
 import torch
-import torch_geometric
-from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv, GAE
-from torch_geometric.transforms import RandomLinkSplit
 import torch.nn.functional as F
 import os
-import reading_data
 import utils
 import csv
 
@@ -36,41 +32,39 @@ class GCN_encoder(torch.nn.Module):
         return h2
 
 
-def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output_nodes, optimizer, learning_rate,
-                  weight_decay, nr_epochs, seed, test=True, record_results=False):
+def run_gae_model(train_data, val_data, test_data, hidden_nodes, output_nodes, optimizer, learning_rate,
+                  weight_decay, nr_epochs, test=True, record_results=False, path_folder=None):
     """
-    Runs the GAE model for a certain dataset and literal representation, and records the results.
-    :param dataset_filename: The filename of the dataset; where it is stored.
-    :param literal_representation: The type of literal representation for the adjacency matrix.
+    Runs the GAE model and records the results - performs the entire training loop.
+    :param train_data: The pre-created training edges.
+    :param val_data: The pre-created validation edges.
+    :param test_data: The pre-created test edges.
     :param hidden_nodes: The number of hidden nodes of the GAE.
     :param output_nodes: The number of output nodes of the GAE.
     :param optimizer: The optimizer used for the GAE.
     :param learning_rate: The learning rate used for the GAE.
     :param weight_decay: The weight decay used for the optimizer of the GAE.
     :param nr_epochs: The number of epochs used for the GAE.
-    :param seed: The random seed used for the GAE
     :param test: A Boolean stating whether the test data is the validation or the test data.
     :param record_results: A Boolean stating whether results need to be stored in CSV files or not.
-    :return:
+    :param path_folder: A path to the folder where the results are stored.
+    :return: A dictionary with the results and the model.
     """
 
     # assert whether aspects of the input data are properly defined
     assert optimizer in ["adam", "sgd", "adagrad"], "Optimizer must be one of: 'adam', 'sgd', 'adagrad'."
 
-    # set the seed
-    torch_geometric.seed.seed_everything(seed)
-
     # put everything into place to record the results:
     if record_results:
-        utils.create_results_folders("GAE")
+        utils.create_results_folders("GAE", path_folder)
 
         # create new file (that does not exist yet)
         current_test = 1
-        while os.path.exists("results/GAE/" + str(current_test) + ".csv"):
+        while os.path.exists("results/GAE/" + "path_folder/" + str(current_test) + ".csv"):
             current_test += 1
 
         # make a file to record the results
-        file_results = open("results/GAE/" + str(current_test) + ".csv", "w")
+        file_results = open("results/GAE/" + "path_folder/" + str(current_test) + ".csv", "w")
         writer_results = csv.writer(file_results)
 
         # create a header
@@ -78,16 +72,16 @@ def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output
         writer_results.writerow(header)
 
         # save the configuration --> so it can be checked later!
-        file_config = open("results/GAE/" + str(current_test) + "_config.csv", "w")
+        file_config = open("results/GAE/" + "path_folder/" + str(current_test) + "_config.csv", "w")
         writer_config = csv.writer(file_config)
 
         # create a header for the configuration
-        header_config = ["Dataset", "Literal_Rep", "Number_Epochs", "Hidden_Nodes", "Output_Nodes", "Optimizer",
-                         "Learning_Rate", "Weight_Decay", "Random_Seed", "Test"]
+        header_config = ["Number_Epochs", "Hidden_Nodes", "Output_Nodes", "Optimizer",
+                         "Learning_Rate", "Weight_Decay", "Test"]
 
         # write in all the configuration data
-        config = [dataset_filename, literal_representation, nr_epochs, hidden_nodes, output_nodes, optimizer,
-                  learning_rate, weight_decay, seed, test]
+        config = [nr_epochs, hidden_nodes, output_nodes, optimizer,
+                  learning_rate, weight_decay, test]
 
         # write the configuration and close it --> file is just for recording of results!
         writer_config.writerow(header_config)
@@ -95,31 +89,8 @@ def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output
         file_config.close()
 
     # ---- MODEL ------
-
-    # create the adjacency matrix
-    adjacency_matrix, mapping_index_to_node, mapping_entity_to_index = reading_data.create_adjacency_matrix_nt(
-        dataset_filename, literal_representation=literal_representation, sparse=True)
-
-    # record the number of nodes
-    number_nodes = adjacency_matrix.size()[0]
-
-    # create the one-hot feature matrix:
-    feature_matrix = torch.sparse_coo_tensor(
-        indices=torch.tensor([list(range(number_nodes)), list(range(number_nodes))]), values=torch.ones(number_nodes),
-        size=(number_nodes, number_nodes))
-
-    # create a data object --> with the already created adjacency matrix
-    data = Data(x=feature_matrix, edge_index=adjacency_matrix.coalesce().indices(), num_nodes=number_nodes)
-
-    # split the edges into a training, validation, and test sets
-    # set up a link split function --> have to split the labels into train, test and validation
-    transformation = RandomLinkSplit(split_labels=True, add_negative_train_samples=False)
-
-    # split the data into a train, validation and test set
-    train_data, val_data, test_data = transformation(data)
-
     # create an encoder with the number of input nodes, hidden nodes, and output nodes as defined
-    encoder = GCN_encoder(data.num_features, hidden_nodes, output_nodes)
+    encoder = GCN_encoder(train_data.num_features, hidden_nodes, output_nodes)
 
     # create the GAE model --> if decoder is not defined, it is the inner product decoder as given by the original paper
     model = GAE(encoder)
@@ -132,9 +103,13 @@ def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output
     elif optimizer == "adagrad":
         optim = torch.optim.Adagrad(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
+    # create loss lists etc., to use later on
+    loss_list_tr = list()
+    loss_list_te = list()
+    ap_list = list()
+    auc_list = list()
+
     # run the training loop:
-    # dataset_filename, literal_representation, hidden_nodes, output_nodes, optimizer, learning_rate,
-    #                   weight_decay, nr_epochs, seed, test=True, record_results=False):
     for epoch in range(nr_epochs):
         # set to training mode, put the grads to zero:
         model.train()
@@ -149,8 +124,6 @@ def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output
 
         # update the parameters
         optim.step()
-
-        # TODO: add additional improvement steps here, such as gradient clipping
 
         # now, evaluate the model and save the information:
         model.eval()
@@ -181,9 +154,19 @@ def run_gae_model(dataset_filename, literal_representation, hidden_nodes, output
                   reconstruction_loss_test.item(), ", AUC_test: ", AUC_test.item(), ", AP_test: ",
                   average_precision_test.item())
 
-    # TODO: add clustering(!), or more experiments with the GAE
+        # add it to the lists as well:
+        loss_list_tr.append(reconstruction_loss.item())
+        loss_list_te.append(reconstruction_loss_test.item())
+        ap_list.append(average_precision_test.item())
+        auc_list.append(AUC_test.item())
 
     # close the file if the results were recorded:
     if record_results:
         # close the file
         file_results.close()
+
+    # make a dictionary of the results and the model, so they can be used later if needed
+    results_dict = {"model": model, "loss_list_train": loss_list_tr, "loss_list_test": loss_list_te,
+                    "ap_list": ap_list, "auc_list": auc_list}
+
+    return results_dict
