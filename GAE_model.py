@@ -60,11 +60,11 @@ def run_gae_model(train_data, val_data, test_data, hidden_nodes, output_nodes, o
 
         # create new file (that does not exist yet)
         current_test = 1
-        while os.path.exists("results/GAE/" + "path_folder/" + str(current_test) + ".csv"):
+        while os.path.exists("results/GAE/" + path_folder + "/" + str(current_test) + ".csv"):
             current_test += 1
 
         # make a file to record the results
-        file_results = open("results/GAE/" + "path_folder/" + str(current_test) + ".csv", "w")
+        file_results = open("results/GAE/" + path_folder + "/" + str(current_test) + ".csv", "w")
         writer_results = csv.writer(file_results)
 
         # create a header
@@ -72,7 +72,7 @@ def run_gae_model(train_data, val_data, test_data, hidden_nodes, output_nodes, o
         writer_results.writerow(header)
 
         # save the configuration --> so it can be checked later!
-        file_config = open("results/GAE/" + "path_folder/" + str(current_test) + "_config.csv", "w")
+        file_config = open("results/GAE/" + path_folder + "/" + str(current_test) + "_config.csv", "w")
         writer_config = csv.writer(file_config)
 
         # create a header for the configuration
