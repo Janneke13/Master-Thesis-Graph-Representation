@@ -3,6 +3,10 @@ from torch_geometric.nn import GATConv
 import torch.nn.functional as F
 from torch.nn import Dropout
 
+"""
+File containing implementation of the GAT model.
+"""
+
 
 class GAT(torch.nn.Module):
     """
@@ -48,7 +52,3 @@ class GAT(torch.nn.Module):
         h2 = self.layer2(h1_activated, A)
         # cross entropy loss used, therefore a softmax is not needed.
         return h2
-
-
-def run_gat_model():
-    pass

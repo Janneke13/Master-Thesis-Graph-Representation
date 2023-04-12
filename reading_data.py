@@ -284,7 +284,7 @@ def training_valid_test_set(file_name_train, file_name_valid, file_name_test, ma
     valid_entities = torch.LongTensor(valid_entities)
     test_entities = torch.LongTensor(test_entities)
 
-    return labels, train_entities, valid_entities, test_entities
+    return labels, train_entities, valid_entities, test_entities, class_mapping
 
 
 def divide_entities_relations_literals(kg):
