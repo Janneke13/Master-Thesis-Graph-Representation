@@ -1,11 +1,6 @@
 import torch
 from torch_geometric.nn import GCNConv
-from torch.nn import CrossEntropyLoss
 import torch.nn.functional as F
-import utils
-import os
-import csv
-from sklearn.metrics import accuracy_score
 
 """
 File that contains the code to create a GCN, as well as run it using a certain dataset.
