@@ -1,35 +1,20 @@
-import torch
-from torch_geometric.nn import GCNConv, GAE
-import torch.nn.functional as F
-import os
-import utils
 import csv
+import os
+import torch
+from torch_geometric.nn import GAE
+import utils
+from GCN_model import GCN
 
 """
-This file contains all code to run the GAE model.
-It contains several parameters with which the parameters of the model itself can be changed.
+Similar to the run_classification_model.py file, but the GAE uses a different way of splitting the data. Also, its
+output is different. Therefore, a different class is created. 
+
 NOTE: for the classification tasks, the training, validation, and test sets are all already created. As the GAE works
-on an edge-level, the edge splitting function of PyTorch Geometric is used.
+on an edge-level, the edge splitting function of PyTorch Geometric is used beforehand, which also creates the false
+edges.
 
 Partly based on: https://github.com/pyg-team/pytorch_geometric/blob/master/examples/autoencoder.py.
 """
-
-
-class GCN_encoder(torch.nn.Module):
-    """
-    Uses GCN layers to encode the nodes.
-    """
-
-    def __init__(self, input_nodes, hidden_nodes, output_nodes):
-        super().__init__()
-        self.layer1 = GCNConv(input_nodes, hidden_nodes)
-        self.layer2 = GCNConv(hidden_nodes, output_nodes)
-
-    def forward(self, X, A):
-        h1 = self.layer1(X, A)
-        h1_activated = F.relu(h1)
-        h2 = self.layer2(h1_activated, A)
-        return h2
 
 
 def run_gae_model(train_data, val_data, test_data, hidden_nodes, output_nodes, optimizer, learning_rate,
@@ -90,7 +75,7 @@ def run_gae_model(train_data, val_data, test_data, hidden_nodes, output_nodes, o
 
     # ---- MODEL ------
     # create an encoder with the number of input nodes, hidden nodes, and output nodes as defined
-    encoder = GCN_encoder(train_data.num_features, hidden_nodes, output_nodes)
+    encoder = GCN(train_data.num_features, hidden_nodes, output_nodes)
 
     # create the GAE model --> if decoder is not defined, it is the inner product decoder as given by the original paper
     model = GAE(encoder)
