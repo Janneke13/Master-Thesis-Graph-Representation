@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score
 import GCN_model
 import RGCN_model
 import GAT_model
+import matplotlib.pyplot as plt
 
 """
 File that contains the code to create multiple classification models, as well as run them using a certain dataset.
@@ -14,7 +15,8 @@ Results can be printed or stored, and are also returned by the function.
 """
 
 
-def run_classification_model(data, type_model, model_parameters, seed, test=True, record_results=False, path_folder=None):
+def run_classification_model(data, type_model, model_parameters, seed, test=True, record_results=False,
+                             path_folder=None):
     """
     Runs a classification model and prints or stores the results.
     :param data: The PyTorch Geometric data object. Contains the adjacency matrix,labels, and the indices of the sets.
@@ -59,15 +61,16 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
 
     if record_results:
         # a specialized folder for the specific model and path
-        utils.create_results_folders(type_model, path_folder)
-
-        # find out which filename is still available
         current_test = 1
-        while os.path.exists("results/" + type_model + "/" + path_folder + "/" + str(current_test) + ".csv"):
+        while os.path.exists("results/" + type_model + "/" + path_folder + "_" + str(current_test)):
             current_test += 1
 
+        utils.create_results_folders(type_model, path_folder + "_" + str(current_test))
+
+        path = "results/" + type_model + "/" + path_folder + "_" + str(current_test)
+
         # make a file to record the results
-        file_results = open("results/" + type_model + "/" + path_folder + "/" + str(current_test) + ".csv", "w")
+        file_results = open(path + "/results.csv", "w")
         writer_results = csv.writer(file_results)
 
         # create a header for the classification results
@@ -75,7 +78,7 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
         writer_results.writerow(header)
 
         # save the configuration --> so it can be checked later!
-        file_config = open("results/" + type_model + "/" + path_folder + "/" + str(current_test) + "_config.csv", "w")
+        file_config = open(path + "/config.csv", "w")
         writer_config = csv.writer(file_config)
 
         # create a header and the data for the configuration
@@ -140,8 +143,13 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
     accuracy_list_test = list()
     f1_list_test = list()
 
+    # check whether cuda can be used and if so, set it as the device!
+    device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
+
     # run the training loop:
     for epoch in range(model_parameters["nr_epochs"]):
+        # move the dataset to the gpu!
+        data.to(device)
 
         # set the model in train mode and set all the grads at zero
         model.train()
@@ -161,6 +169,9 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
 
         # put model to evaluate
         model.eval()
+
+        # put the data to the cpu for this step --> record everything!
+        data = data.cpu()
 
         # get the predictions
         predictions = output.argmax(dim=1)
@@ -191,6 +202,8 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
 
     # once out of the loop, as we have to do this once again to get the final results (of the last training step):
     # set everything to evaluation, and do one last step
+    data.to(device)  # again, put it in the gpu!
+
     model.eval()
 
     if type_model == "RGCN":
@@ -199,6 +212,9 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
         output = model(data.x, data.edge_index)
 
     loss = loss_function(output[data.train_mask], data.y[data.train_mask])
+
+    # data to the cpu to compute metrics and record them!
+    data = data.cpu()
 
     # get the predictions and the training accuracy
     predictions = output.argmax(dim=1)
@@ -222,5 +238,30 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
     # make a dictionary of results and return this:
     result_dict = {"model": model, "loss_list_train": loss_list_train, "loss_list_test": loss_list_test,
                    "accuracy_train": accuracy_list_train, "accuracy_test": accuracy_list_test, "f1_test": f1_list_test}
+
+    # make plots and save them!
+
+    # loss
+    plt.plot(loss_list_train, label="Training")
+    if test:
+        plt.plot(loss_list_test, label="Test")
+    else:
+        plt.plot(loss_list_test, label="Validation")
+    plt.legend()
+    plt.xlabel("Epoch")
+    plt.ylabel("Cross Entropy Loss")
+    plt.savefig(path + "/loss_plot.jpeg", dpi=300)
+
+    # accuracy
+    plt.figure()
+    plt.plot(accuracy_list_train, label="Training")
+    if test:
+        plt.plot(accuracy_list_test, label="Test")
+    else:
+        plt.plot(accuracy_list_test, label="Validation")
+    plt.legend()
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.savefig(path + "/acc_plot.jpeg", dpi=300)
 
     return result_dict

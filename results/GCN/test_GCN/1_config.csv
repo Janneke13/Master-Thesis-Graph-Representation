@@ -1,2 +1,0 @@
-Number_Epochs,Hidden_Nodes,Optimizer,Learning_Rate,Weight_Decay,Test
-100,200,adam,0.001,0,True

@@ -89,6 +89,10 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     # create loss lists etc., to use later on
     loss_list_tr = list()
 
+    # check whether cuda can be used and if so, set it as the device!
+    device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
+    data.to(device)
+
     # run the training loop:
     for epoch in range(nr_epochs):
         # set to training mode, put the grads to zero:
@@ -126,6 +130,9 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
 
     # put the coordinates in a dataframe:
     coordinates = pd.DataFrame(latent_space_final.detach().numpy())
+
+    # put the data to the cpu, as it needs to be used for statistics now!
+    data = data.cpu()
 
     # add the labels and filter the dataframe to only get the labelled entities
     coordinates['labels'] = data.y.int()
