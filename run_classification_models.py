@@ -14,7 +14,7 @@ Results can be printed or stored, and are also returned by the function.
 """
 
 
-def run_classification_model(data, type_model, model_parameters, test=True, record_results=False, path_folder=None):
+def run_classification_model(data, type_model, model_parameters, seed, test=True, record_results=False, path_folder=None):
     """
     Runs a classification model and prints or stores the results.
     :param data: The PyTorch Geometric data object. Contains the adjacency matrix,labels, and the indices of the sets.
@@ -29,6 +29,7 @@ def run_classification_model(data, type_model, model_parameters, test=True, reco
             - nr_heads (GAT-specific): The number of attention heads for the GAT.
             - dropout (GAT-specific): The dropout for the GAT model.
             - num_rel (RGCN-specific): The number of relations the R-GCN needs to take into account.
+    :param seed: The random seed used to set it (before entering this function, recording purposes only.
     :param test: Whether the test data is used (if False, the validation data is used).
     :param record_results: If True, the results and the configuration will be recorded in .csv files.
     :param path_folder: Where the results need to be stored (only applicable if record_results is True).
@@ -78,10 +79,11 @@ def run_classification_model(data, type_model, model_parameters, test=True, reco
         writer_config = csv.writer(file_config)
 
         # create a header and the data for the configuration
-        header_config = ["Number_Epochs", "Type_Model", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay", "Test"]
+        header_config = ["Number_Epochs", "Type_Model", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay",
+                         "Test", "Seed"]
         config = [model_parameters["nr_epochs"], type_model, model_parameters["hidden_nodes"],
                   model_parameters["optimizer"], model_parameters["learning_rate"], model_parameters["weight_decay"],
-                  test]
+                  test, seed]
 
         # the GAT and RGCN models have more parameters that need to be stored
         if type_model == "GAT":

@@ -19,7 +19,7 @@ Saves a plot of the rec loss and the contingency tables of the clustering as wel
 """
 
 
-def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weight_decay, nr_epochs, label_map):
+def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weight_decay, nr_epochs, label_map, seed):
     """
     Runs the GAE model and records the results - performs the entire training loop.
     :param data_name: The name of the dataset (for documentation purposes).
@@ -30,6 +30,7 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     :param weight_decay: The weight decay used for the optimizer of the GAE.
     :param nr_epochs: The number of epochs used for the GAE.
     :param label_map: The mapping of the labels with label:id.
+    :param seed: The seed used to initialize everything (set before entering this method), for recording purposes only.
     :return: A dictionary with the results and the model.
     """
 
@@ -57,10 +58,10 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     writer_config = csv.writer(file_config)
 
     # create a header for the configuration
-    header_config = ["Number_Epochs", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay"]
+    header_config = ["Number_Epochs", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay", "Seed"]
 
     # write in all the configuration data
-    config = [nr_epochs, hidden_nodes, optimizer, learning_rate, weight_decay]
+    config = [nr_epochs, hidden_nodes, optimizer, learning_rate, weight_decay, seed]
 
     # write the configuration and close it --> file is just for recording of configuration!
     writer_config.writerow(header_config)
@@ -168,8 +169,8 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
         handles = []
         handles_colors = []
 
-        # 0 stands for unlabelled, so start from 1
-        for i in range(1, nr_clusters + 1):
+        # -1 stands for unlabelled
+        for i in range(0, nr_clusters):
             # in the clustering from sklearn, it starts with 0 and goes up
             for j in range(nr_clusters):
                 # find the specific slice that contains the ones with a specific marker and color
