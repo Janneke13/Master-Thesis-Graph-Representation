@@ -19,7 +19,8 @@ Saves a plot of the rec loss and the contingency tables of the clustering as wel
 """
 
 
-def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weight_decay, nr_epochs, label_map, seed):
+def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weight_decay, nr_epochs, label_map, seed,
+                  literal_mapping):
     """
     Runs the GAE model and records the results - performs the entire training loop.
     :param data_name: The name of the dataset (for documentation purposes).
@@ -31,6 +32,7 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     :param nr_epochs: The number of epochs used for the GAE.
     :param label_map: The mapping of the labels with label:id.
     :param seed: The seed used to initialize everything (set before entering this method), for recording purposes only.
+    :param literal_mapping: The type of literal mapping used, for recording purpose only.
     :return: A dictionary with the results and the model.
     """
 
@@ -58,10 +60,11 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     writer_config = csv.writer(file_config)
 
     # create a header for the configuration
-    header_config = ["Number_Epochs", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay", "Seed"]
+    header_config = ["Number_Epochs", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay", "Seed", "Literal "
+                                                                                                            "Mapping"]
 
     # write in all the configuration data
-    config = [nr_epochs, hidden_nodes, optimizer, learning_rate, weight_decay, seed]
+    config = [nr_epochs, hidden_nodes, optimizer, learning_rate, weight_decay, seed, literal_mapping]
 
     # write the configuration and close it --> file is just for recording of configuration!
     writer_config.writerow(header_config)

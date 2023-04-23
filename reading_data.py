@@ -153,7 +153,7 @@ def create_adjacency_matrix_nt(file_name, literal_representation="filtered", rel
         elif literal_representation == "separate":
             column_selected = current  # select a new column for every literal
 
-            # map the literal to an index as well - this is the only mapping returned later, so it is relevant
+            # map the literal to an index as well
             map_ind_to_nod[current] = tail
             current += 1
 

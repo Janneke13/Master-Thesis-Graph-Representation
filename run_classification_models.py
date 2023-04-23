@@ -15,7 +15,7 @@ Results can be printed or stored, and are also returned by the function.
 """
 
 
-def run_classification_model(data, type_model, model_parameters, seed, test=True, record_results=False,
+def run_classification_model(data, type_model, model_parameters, seed, literal_mapping, test=True, record_results=False,
                              path_folder=None):
     """
     Runs a classification model and prints or stores the results.
@@ -32,6 +32,7 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
             - dropout (GAT-specific): The dropout for the GAT model.
             - num_rel (RGCN-specific): The number of relations the R-GCN needs to take into account.
     :param seed: The random seed used to set it (before entering this function, recording purposes only.
+    :param literal_mapping: The literal mapping used for the adjacency matrix, for recording purposes only
     :param test: Whether the test data is used (if False, the validation data is used).
     :param record_results: If True, the results and the configuration will be recorded in .csv files.
     :param path_folder: Where the results need to be stored (only applicable if record_results is True).
@@ -83,10 +84,10 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
 
         # create a header and the data for the configuration
         header_config = ["Number_Epochs", "Type_Model", "Hidden_Nodes", "Optimizer", "Learning_Rate", "Weight_Decay",
-                         "Test", "Seed"]
+                         "Test", "Seed", "Literal Mapping"]
         config = [model_parameters["nr_epochs"], type_model, model_parameters["hidden_nodes"],
                   model_parameters["optimizer"], model_parameters["learning_rate"], model_parameters["weight_decay"],
-                  test, seed]
+                  test, seed, literal_mapping]
 
         # the GAT and RGCN models have more parameters that need to be stored
         if type_model == "GAT":
@@ -242,6 +243,7 @@ def run_classification_model(data, type_model, model_parameters, seed, test=True
     # make plots and save them!
 
     # loss
+    plt.figure()
     plt.plot(loss_list_train, label="Training")
     if test:
         plt.plot(loss_list_test, label="Test")

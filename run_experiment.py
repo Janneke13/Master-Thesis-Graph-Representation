@@ -122,8 +122,8 @@ elif arguments.model == "GAT":
 
 # run the experiment:
 if arguments.model != "GAE":
-    result_dict = run_classification_model(data, arguments.model, param_dict, arguments.seed,
+    result_dict = run_classification_model(data, arguments.model, param_dict, arguments.seed, arguments.literal_map,
                                            test=arguments.test, record_results=True, path_folder=arguments.dataset)
 else:
     run_gae_model(arguments.dataset, data, arguments.hidden_nodes, arguments.optimizer, arguments.learning_rate,
-                  arguments.weight_decay, arguments.num_epochs, label_mapping, arguments.seed)
+                  arguments.weight_decay, arguments.num_epochs, label_mapping, arguments.seed, arguments.literal_map)
