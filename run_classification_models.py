@@ -171,6 +171,14 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
         # put model to evaluate
         model.eval()
 
+        # evaluate the model at this point
+        if type_model == "RGCN":
+            output = model(data.x, data.edge_index, data.edge_type)
+        else:
+            output = model(data.x, data.edge_index)
+
+        loss = loss_function(output[data.train_mask], data.y[data.train_mask])
+
         # put the data to the cpu for this step --> record everything!
         data = data.cpu()
 
@@ -198,43 +206,8 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
             row = [epoch, loss.item(), train_acc, test_loss.item(), test_acc, test_f1]
             writer_results.writerow(row)
         else:
-            print("Epoch: ", epoch, ", Training Loss: ", loss.item(), ", Training Acc: ", train_acc,
+            print("Epoch: ", epoch + 1, ", Training Loss: ", loss.item(), ", Training Acc: ", train_acc,
                   ", Test loss: ", test_loss.item(), ", Test Acc: ", test_acc, ", Test F1: ", test_f1)
-
-    # once out of the loop, as we have to do this once again to get the final results (of the last training step):
-    # set everything to evaluation, and do one last step
-    data.to(device)  # again, put it in the gpu!
-
-    model.eval()
-
-    if type_model == "RGCN":
-        output = model(data.x, data.edge_index, data.edge_type)
-    else:
-        output = model(data.x, data.edge_index)
-
-    loss = loss_function(output[data.train_mask], data.y[data.train_mask])
-
-    # data to the cpu to compute metrics and record them!
-    data = data.cpu()
-
-    # get the predictions and the training accuracy
-    predictions = output.argmax(dim=1)
-    train_acc = accuracy_score(data.y[data.train_mask], predictions[data.train_mask])
-
-    if test:
-        test_loss, test_acc, test_f1 = utils.calculate_class_metrics(output, data.y,
-                                                                     predictions, loss_function, data.test_mask)
-    else:
-        test_loss, test_acc, test_f1 = utils.calculate_class_metrics(output, data.y,
-                                                                     predictions, loss_function, data.val_mask)
-
-    # again, record the results if needed
-    if record_results:
-        row = [model_parameters["nr_epochs"], loss.item(), train_acc, test_loss.item(), test_acc, test_f1]
-        writer_results.writerow(row)
-    else:
-        print("Epoch: ", model_parameters["nr_epochs"], ", Training Loss: ", loss.item(), ", Training Acc: ", train_acc,
-              ", Test loss: ", test_loss.item(), ", Test Acc: ", test_acc, ", Test F1: ", test_f1)
 
     # make a dictionary of results and return this:
     result_dict = {"model": model, "loss_list_train": loss_list_train, "loss_list_test": loss_list_test,
@@ -253,6 +226,7 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
     plt.xlabel("Epoch")
     plt.ylabel("Cross Entropy Loss")
     plt.savefig(path + "/loss_plot.jpeg", dpi=300)
+    plt.close()
 
     # accuracy
     plt.figure()
@@ -265,5 +239,6 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.savefig(path + "/acc_plot.jpeg", dpi=300)
+    plt.close()
 
     return result_dict
