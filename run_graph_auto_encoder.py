@@ -10,6 +10,7 @@ from sklearn.mixture import GaussianMixture
 import string
 from matplotlib.cm import get_cmap
 import matplotlib.patches as mpatches
+from sklearn.metrics.cluster import adjusted_rand_score
 
 """
 Uses the GAE to encode everything, will end on 2 coordinates. Then, clusters this data and creates a scatter plot of it.
@@ -47,13 +48,21 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
 
     utils.create_results_folders("GAE", data_name + "_" + str(current_test))
 
-    # make a file to record the results
+    # make a file to record the reconstruction loss
     file_results = open("results/GAE/" + data_name + "_" + str(current_test) + "/results.csv", "w")
     writer_results = csv.writer(file_results)
 
     # create a header
     header = ["Epoch", "ReconLossTrain"]
     writer_results.writerow(header)
+
+    # make a file to record the final results (including those of clustering) ------
+    file_results_final = open("results/GAE/" + data_name + "_" + str(current_test) + "/final_results.csv", "w")
+    writer_final_results = csv.writer(file_results_final)
+
+    # write the header --> bic scores for the clustering, rand12 stands for the rand score of cluster 1 and cluster 2
+    header = ["ReconLossFinal", "BIC_1", "BIC_2", "BIC_3", "Rand12", "Rand23", "Rand13"]
+    writer_final_results.writerow(header)
 
     # save the configuration --> so it can be checked later!
     file_config = open("results/GAE/" + data_name + "_" + str(current_test) + "/config.csv", "w")
@@ -152,6 +161,10 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     # add the label names
     coordinates_labelled['label_names'] = coordinates_labelled['labels'].map(mapping_labels)
 
+    # store for the final results
+    bic_scores = []
+    clustering = []
+
     # cluster the output, do this three times, with different random states (to check whether it is stable)
     for random_seed in [1, 2, 3]:
         plt.figure()
@@ -160,6 +173,10 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
         gmm = GaussianMixture(n_components=nr_clusters, random_state=random_seed)
         gmm.fit(coordinates_labelled[[0, 1]])
         predictions = gmm.predict(coordinates_labelled[[0, 1]])
+
+        # append the bic score and the current clusters
+        bic_scores.append(gmm.bic(coordinates_labelled[[0, 1]]))
+        clustering.append(predictions)
 
         # set the predictions in there!
         coordinates_labelled['predictions'] = predictions
@@ -198,7 +215,19 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
         plt.legend(handles=handles_colors)
 
         # save the figure
-        plt.savefig("results/GAE/" + data_name + "_" + str(current_test) + "/clusterplot_" + str(random_seed) + ".jpeg", dpi=300)
+        plt.savefig("results/GAE/" + data_name + "_" + str(current_test) + "/clusterplot_" + str(random_seed) + ".jpeg",
+                    dpi=300)
+
+    # write the final results:
+    rand_in12 = adjusted_rand_score(clustering[0], clustering[1])
+    rand_in23 = adjusted_rand_score(clustering[1], clustering[2])
+    rand_in13 = adjusted_rand_score(clustering[0], clustering[2])
+
+    fin_res = [loss_list_tr[-1], bic_scores[0], bic_scores[1], bic_scores[2], rand_in12, rand_in23, rand_in13]
+    writer_final_results.writerow(fin_res)
+
+    # close the file of the final results
+    file_results_final.close()
 
     plt.figure()
     plt.plot(loss_list_tr)
