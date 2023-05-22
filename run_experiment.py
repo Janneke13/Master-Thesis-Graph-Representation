@@ -100,7 +100,7 @@ data = Data(x=feature_matrix, edge_index=indices_edges, edge_type=type_edges, nu
 
 # needed for the hyperparameter dictionaries
 nr_relations = data.num_edge_types
-number_classes = len(labels.unique()) - 1  # reduce by 1, as the 0 stands for "no class", therefore it is not needed
+number_classes = len(labels.unique()) - 1  # reduce by 1, as the -1 stands for "no class", therefore it is not needed
 
 # add parameter dictionary
 param_dict = None
@@ -123,7 +123,9 @@ elif arguments.model == "GAT":
 # run the experiment:
 if arguments.model != "GAE":
     result_dict = run_classification_model(data, arguments.model, param_dict, arguments.seed, arguments.literal_map,
-                                           test=arguments.test, record_results=True, path_folder=arguments.dataset)
+                                           mapping_index_to_node, test=arguments.test, record_results=True,
+                                           path_folder=arguments.dataset)
 else:
     run_gae_model(arguments.dataset, data, arguments.hidden_nodes, arguments.optimizer, arguments.learning_rate,
-                  arguments.weight_decay, arguments.num_epochs, label_mapping, arguments.seed, arguments.literal_map)
+                  arguments.weight_decay, arguments.num_epochs, label_mapping, arguments.seed, arguments.literal_map,
+                  mapping_index_to_node)

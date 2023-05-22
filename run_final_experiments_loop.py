@@ -5,6 +5,8 @@ from torch_geometric.data import Data
 import reading_data
 import torch_geometric
 from run_graph_auto_encoder import run_gae_model
+import os
+import json
 
 """
 This file is used to run the model and save the outputs. Command line can be used to put in the different arguments.
@@ -36,8 +38,8 @@ parser.add_argument("--nr_attention_heads", type=int, default=8, help="Number of
 arguments = parser.parse_args()
 
 # some asserts, to make none of the modes defined are nonexistent
-assert arguments.dataset in ['aifb', 'mutag', 'dmg777k'], "Dataset needs to be one of the following: 'aifb', 'mutag'," \
-                                                          " 'dmg777k"
+assert arguments.dataset in ['aifb', 'mutag', 'dmg777k', 'synth'], "Dataset needs to be one of the following: 'aifb', 'mutag'," \
+                                                          " 'dmg777k, 'synth'"
 assert arguments.model in ["GAE", "GCN", "RGCN", "GAT"], "Model needs to be one of the following: 'GAE', 'GCN', " \
                                                          "'RGCN', 'GAT'."
 assert arguments.optimizer in ['sgd', 'adam', 'adagrad'], "Optimizer needs to be one of the following: 'sgd', 'adam, " \
@@ -60,6 +62,11 @@ elif arguments.dataset == 'mutag':
     path_train = "data/mutag/gz_files/mutag_train_set.nt.gz"
     path_valid = "data/mutag/gz_files/mutag_valid_set.nt.gz"
     path_test = "data/mutag/gz_files/mutag_test_set.nt.gz"
+elif arguments.dataset == "synth":
+    path_data = "data/synth/context.nt.gz"
+    path_train = "data/synth/train.nt.gz"
+    path_valid = "data/synth/valid.nt.gz"
+    path_test = "data/synth/test.nt.gz"
 else:  # dmg777k
     path_data = "data/dmg777k/gz_files/dmg777k_stripped.nt.gz"
     path_train = "data/dmg777k/gz_files/dmg777k_train_set.nt.gz"
@@ -83,6 +90,19 @@ labels, train_entities, valid_entities, test_entities, label_mapping = \
 train_mask = torch.tensor([i in train_entities for i in range(len(labels))])
 valid_mask = torch.tensor([i in valid_entities for i in range(len(labels))])
 test_mask = torch.tensor([i in test_entities for i in range(len(labels))])
+
+# save for later -- in case this is needed
+if not os.path.exists('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map):
+    os.makedirs('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map)
+
+with open('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final/mapping_ent_to_ind.json', 'w') as file:
+    json.dump(mapping_entity_to_index, file)
+
+with open('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final/mapping_ind_to_rel.json', 'w') as file:
+    json.dump(map_index_to_relation, file)
+
+with open('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final/label_mapping.json', 'w') as file:
+    json.dump(label_mapping, file)
 
 # run it 10 times with different seeds
 for seed in range(1, 11):
@@ -125,8 +145,9 @@ for seed in range(1, 11):
 
     # run the experiment:
     if arguments.model != "GAE":
-        result_dict = run_classification_model(data, arguments.model, param_dict, seed, arguments.literal_map,
+        result_dict = run_classification_model(data, arguments.model, param_dict, seed, arguments.literal_map, mapping_index_to_node,
                                                test=arguments.test, record_results=True, path_folder=arguments.dataset)
     else:
         run_gae_model(arguments.dataset, data, arguments.hidden_nodes, arguments.optimizer, arguments.learning_rate,
-                      arguments.weight_decay, arguments.num_epochs, label_mapping, seed, arguments.literal_map)
+                      arguments.weight_decay, arguments.num_epochs, label_mapping, seed, arguments.literal_map,
+                      mapping_index_to_node)

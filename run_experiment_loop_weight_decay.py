@@ -127,9 +127,9 @@ for literal_map in ["filtered", "all-to-one", "collapsed", "separate"]:
 
                 # run the experiment:
                 if model != "GAE":
-                    result_dict = run_classification_model(data, model, param_dict, seed, literal_map,
+                    result_dict = run_classification_model(data, model, param_dict, seed, literal_map, mapping_index_to_node,
                                                            test=False, record_results=True, path_folder=dataset+"_valid_")
                 else:
                     run_gae_model(dataset, data, hidden_nodes, optimizer, learning_rate,
-                                  weight_decay, num_epochs, label_mapping, seed, literal_map)
+                                  weight_decay, num_epochs, label_mapping, seed, literal_map, mapping_index_to_node)
 

@@ -15,7 +15,7 @@ Results can be printed or stored, and are also returned by the function.
 """
 
 
-def run_classification_model(data, type_model, model_parameters, seed, literal_mapping, test=True, record_results=False,
+def run_classification_model(data, type_model, model_parameters, seed, literal_mapping, map_id_to_ent, test=True, record_results=False,
                              path_folder=None):
     """
     Runs a classification model and prints or stores the results.
@@ -212,6 +212,32 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
     # make a dictionary of results and return this:
     result_dict = {"model": model, "loss_list_train": loss_list_train, "loss_list_test": loss_list_test,
                    "accuracy_train": accuracy_list_train, "accuracy_test": accuracy_list_test, "f1_test": f1_list_test}
+
+    # ---- save the labels in a file-----
+    file_labels_train = open(
+        "results/" + type_model + "/" + path_folder + "_" + str(current_test) + "/predictions_train.csv", "w")
+    file_labels_test = open("results/" + type_model + "/" + path_folder + "_" + str(current_test) + "/predictions_test.csv", "w")
+    writer_labels_test = csv.writer(file_labels_test)
+    writer_labels_train = csv.writer(file_labels_train)
+
+    # create a header
+    header = ["ID", "Entity", "PredictedLabel", "TrueLabel"]
+    writer_labels_test.writerow(header)
+    writer_labels_train.writerow(header)
+
+    # write the results into a file:
+    for i in range(len(data.y)):
+        if data.test_mask[i] or data.val_mask[i] or data.train_mask[i]:
+            row = [i, map_id_to_ent[i], predictions[i].item(), data.y[i].item()]
+
+        if (data.test_mask[i] and test) or (data.val_mask[i] and not test):
+            writer_labels_test.writerow(row)
+
+        if data.train_mask[i]:
+            writer_labels_train.writerow(row)
+
+    file_labels_test.close()
+    file_labels_train.close()
 
     # make plots and save them!
 

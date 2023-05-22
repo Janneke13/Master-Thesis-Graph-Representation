@@ -21,7 +21,7 @@ Saves a plot of the rec loss and the contingency tables of the clustering as wel
 
 
 def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weight_decay, nr_epochs, label_map, seed,
-                  literal_mapping):
+                  literal_mapping, entity_mapping):
     """
     Runs the GAE model and records the results - performs the entire training loop.
     :param data_name: The name of the dataset (for documentation purposes).
@@ -34,6 +34,7 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     :param label_map: The mapping of the labels with label:id.
     :param seed: The seed used to initialize everything (set before entering this method), for recording purposes only.
     :param literal_mapping: The type of literal mapping used, for recording purpose only.
+    :param entity_mapping: Mapping with id:entity.
     :return: A dictionary with the results and the model.
     """
 
@@ -150,7 +151,7 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
     coordinates['labels'] = data.y.int()
 
     # set the new labeled coordinates
-    coordinates_labelled = coordinates[coordinates['labels'] != 0]
+    coordinates_labelled = coordinates[coordinates['labels'] != -1]
 
     # find out how many clusters there need to be
     nr_clusters = len(coordinates_labelled['labels'].unique())
@@ -217,6 +218,23 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
         # save the figure
         plt.savefig("results/GAE/" + data_name + "_" + str(current_test) + "/clusterplot_" + str(random_seed) + ".jpeg",
                     dpi=300)
+
+        # ---- save the clusters in a file-----
+        file_cluster = open("results/GAE/" + data_name + "_" + str(current_test) + "/cluster" + str(random_seed) +
+                            ".csv", "w")
+        writer_cluster = csv.writer(file_cluster)
+
+        # create a header
+        header = ["ID", "Entity", "Cluster", "TrueLabel", "X", "Y"]
+        writer_cluster.writerow(header)
+
+        # write the results
+        for i in range(len(coordinates_labelled)):
+            row = [i, entity_mapping[i], coordinates_labelled.iloc[i, 4], coordinates_labelled.iloc[i, 3], coordinates_labelled.iloc[i, 0],
+                   coordinates_labelled.iloc[i, 1]]
+            writer_cluster.writerow(row)
+
+        file_cluster.close()
 
     # write the final results:
     rand_in12 = adjusted_rand_score(clustering[0], clustering[1])
