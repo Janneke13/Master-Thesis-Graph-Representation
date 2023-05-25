@@ -149,7 +149,8 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
 
     # run the training loop:
     for epoch in range(model_parameters["nr_epochs"]):
-        # move the dataset to the gpu!
+        # move the dataset to the gpu if needed!
+        model.to(device)
         data.to(device)
 
         # set the model in train mode and set all the grads at zero
@@ -210,7 +211,7 @@ def run_classification_model(data, type_model, model_parameters, seed, literal_m
                   ", Test loss: ", test_loss.item(), ", Test Acc: ", test_acc, ", Test F1: ", test_f1)
 
     # make a dictionary of results and return this:
-    result_dict = {"model": model, "loss_list_train": loss_list_train, "loss_list_test": loss_list_test,
+    result_dict = {"model": model.cpu(), "loss_list_train": loss_list_train, "loss_list_test": loss_list_test,
                    "accuracy_train": accuracy_list_train, "accuracy_test": accuracy_list_test, "f1_test": f1_list_test}
 
     # ---- save the labels in a file-----

@@ -88,8 +88,8 @@ labels, train_entities, valid_entities, test_entities, label_mapping = \
                                          adjacency_matrix.size()[0])
 
 # save for later -- in case this is needed
-if not os.path.exists('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map):
-    os.makedirs('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map)
+if not os.path.exists('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final'):
+    os.makedirs('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final')
 
 with open('results/' + arguments.model + "/test_" + arguments.dataset + "_" + arguments.literal_map + '_final/mapping_ent_to_ind.json', 'w') as file:
     json.dump(mapping_entity_to_index, file)
@@ -149,8 +149,11 @@ for seed in range(1, 11):
 
     # run the experiment:
     if arguments.model != "GAE":
-        result_dict = run_classification_model(data, arguments.model, param_dict, seed, arguments.literal_map, mapping_index_to_node,
-                                               test=arguments.test, record_results=True, path_folder=arguments.dataset)
+        result_dict = run_classification_model(data, arguments.model, param_dict, seed, arguments.literal_map,
+                                               mapping_index_to_node,
+                                               test=arguments.test, record_results=True,
+                                               path_folder="test_" + arguments.dataset + "_" +
+                                                           arguments.literal_map + "_final/" + arguments.dataset)
     else:
         run_gae_model(arguments.dataset, data, arguments.hidden_nodes, arguments.optimizer, arguments.learning_rate,
                       arguments.weight_decay, arguments.num_epochs, label_mapping, seed, arguments.literal_map,
