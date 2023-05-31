@@ -3,14 +3,14 @@ from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
 
 """
-File that contains the code to create a GCN, as well as run it using a certain dataset.
-Results can be printed or stored, and are also returned by the function.
+File that contains the code to create a GCN.
 """
 
 
 class GCN(torch.nn.Module):
     """
-    A basic two-layer Graph Convolutional Network. From the paper: <add reference>
+    A basic two-layer Graph Convolutional Network. From the paper: Thomas N. Kipf, & Max Welling. (2017).
+    Semi-Supervised Classification with Graph Convolutional Networks. https://doi.org/10.48550/arXiv.1609.02907
     """
 
     def __init__(self, input_nodes, hidden_nodes, output_nodes):

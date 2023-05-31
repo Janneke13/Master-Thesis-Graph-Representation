@@ -11,7 +11,8 @@ File containing implementation of the GAT model.
 class GAT(torch.nn.Module):
     """
     Implementation of the Graph Attention Network.
-    Based on paper <add reference to paper>
+    Based on paper Veličković, P., Cucurull, G., Casanova, A., Romero, A., Liò, P. & Bengio, Y. (2018).
+    Graph Attention Networks. https://doi.org/10.48550/arXiv.1710.10903
     """
 
     def __init__(self, input_nodes, hidden_nodes, output_nodes, nr_heads, dropout):

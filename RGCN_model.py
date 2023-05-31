@@ -9,7 +9,9 @@ File containing the implementation of the R-GCN model.
 
 class RGCN(torch.nn.Module):
     """
-    A class to create a basic two-layer Relational GCN.
+    A class to create a basic two-layer Relational GCN. RGCN is from: Schlichtkrull, M.,  Kipf, T.N., Bloem, P.,
+    van den Berg, R., Titov, I. & Welling, M. (2017). Modeling Relational Data with Graph Convolutional Networks.
+    https://doi.org/10.48550/arXiv.1703.06103
     """
     def __init__(self, input_nodes, hidden_nodes, output_nodes, num_rel):
         """

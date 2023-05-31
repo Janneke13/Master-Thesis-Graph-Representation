@@ -64,6 +64,11 @@ elif arguments.dataset == 'mutag':
     path_train = "data/mutag/gz_files/mutag_train_set.nt.gz"
     path_valid = "data/mutag/gz_files/mutag_valid_set.nt.gz"
     path_test = "data/mutag/gz_files/mutag_test_set.nt.gz"
+elif arguments.dataset == 'synth':
+    path_data = "data/synth/gz_files/context.nt.gz"
+    path_train = "data/synth/gz_files/train.nt.gz"
+    path_valid = "data/synth/gz_files/valid.nt.gz"
+    path_test = "data/synth/gz_files/test.nt.gz"
 else:  # dmg777k
     path_data = "data/dmg777k/gz_files/dmg777k_stripped.nt.gz"
     path_train = "data/dmg777k/gz_files/dmg777k_train_set.nt.gz"
