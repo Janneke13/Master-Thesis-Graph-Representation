@@ -225,12 +225,12 @@ def run_gae_model(data_name, data, hidden_nodes, optimizer, learning_rate, weigh
         writer_cluster = csv.writer(file_cluster)
 
         # create a header
-        header = ["ID", "Entity", "Cluster", "TrueLabel", "X", "Y"]
+        header = ["Datapoint", "Cluster", "TrueLabel", "X", "Y"]
         writer_cluster.writerow(header)
 
         # write the results
         for i in range(len(coordinates_labelled)):
-            row = [i, entity_mapping[i], coordinates_labelled.iloc[i, 4], coordinates_labelled.iloc[i, 3], coordinates_labelled.iloc[i, 0],
+            row = [i, coordinates_labelled.iloc[i, 4], coordinates_labelled.iloc[i, 3], coordinates_labelled.iloc[i, 0],
                    coordinates_labelled.iloc[i, 1]]
             writer_cluster.writerow(row)
 
