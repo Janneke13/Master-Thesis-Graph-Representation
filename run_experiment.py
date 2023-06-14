@@ -37,8 +37,8 @@ parser.add_argument("--nr_attention_heads", type=int, default=8, help="Number of
 arguments = parser.parse_args()
 
 # some asserts, to make none of the modes defined are nonexistent
-assert arguments.dataset in ['aifb', 'mutag', 'dmg777k'], "Dataset needs to be one of the following: 'aifb', 'mutag'," \
-                                                          " 'dmg777k"
+assert arguments.dataset in ['aifb', 'mutag', 'dmg777k', 'synth'], "Dataset needs to be one of the following: 'aifb', "\
+                                                                   "'mutag','dmg777k', 'synth'"
 assert arguments.model in ["GAE", "GCN", "RGCN", "GAT"], "Model needs to be one of the following: 'GAE', 'GCN', " \
                                                    "'RGCN', 'GAT'."
 assert arguments.optimizer in ['sgd', 'adam', 'adagrad'], "Optimizer needs to be one of the following: 'sgd', 'adam, " \
