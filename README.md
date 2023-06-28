@@ -53,8 +53,8 @@ python run_final_experiments_loop_transposed.py
 
 The paths currently implemented are for the four different datasets, as used in this thesis. 
 They are: 'aifb', 'mutag', 'dmg777k', and 'synth'. Note that, before this is done, either the 
-paths need to be changed to where the user stored the files, or the user needs to create a 'data' folder, as will be
-specified below. The mapping techniques can be set with 'filtered', 'collapsed', 'all-to-one', and 'separate'.
+paths need to be changed to where the user stored the files, or the user needs to create a 'data' folder, as specified
+earlier. The mapping techniques can be set with 'filtered', 'collapsed', 'all-to-one', and 'separate'.
 
 ### About the code:
 
